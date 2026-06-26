@@ -1,0 +1,64 @@
+# .github/workflows/deploy.yml
+#
+# 수동 배포(workflow_dispatch).
+# npm run build → dist/ → 서버 /opt/iotradio/web/ 에 업로드.
+#
+# 사전 준비 (GitHub 저장소 Settings → Secrets and variables → Actions):
+#   LIGHTSAIL_HOST     서버 고정 IP (15.165.29.225)
+#   LIGHTSAIL_USER     ubuntu
+#   LIGHTSAIL_SSH_KEY  Lightsail .pem 파일 전체 내용
+
+name: Deploy Frontend
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 빌드
+        run: npm run build
+        env:
+          VITE_SERVER: https://iotradio.co.kr
+
+      - name: SSH 키 준비
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.LIGHTSAIL_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 서버 web/ 폴더 비우기
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+            "rm -rf /opt/iotradio/web/* && mkdir -p /opt/iotradio/web"
+
+      - name: dist/ 업로드
+        run: |
+          scp -i ~/.ssh/deploy_key -r dist/* \
+            ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:/opt/iotradio/web/
+
+      - name: 권한 설정
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+            "sudo chown -R www-data:www-data /opt/iotradio/web && sudo chmod -R 755 /opt/iotradio/web"
+
+      - name: 배포 완료
+        run: echo "프론트 배포 완료"
