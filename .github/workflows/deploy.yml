@@ -61,7 +61,7 @@ jobs:
       - name: 권한 설정
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
-            "sudo chown -R www-data:www-data /opt/iotradio/web && sudo chmod -R 755 /opt/iotradio/web"
+            "sudo chmod -R 755 /opt/iotradio/web"
 
       - name: 배포 완료
         run: echo "프론트 배포 완료"
