@@ -21,41 +21,62 @@ export default function App() {
   const isLive = b.ingestState === 'live';
 
   return (
-    <div className="app">
+    <div className="app app-wide">
       <div className="topbar">
         <div className="brand">
           <img src="/brand/logo.png" alt="" className="brand-logo" />
-          <h1>마을 방송국</h1>
+          <div className="brand-text">
+            <h1>castboard</h1>
+            <p className="tagline">방송 콘솔 · 실시간 IoT 라디오 송출</p>
+          </div>
         </div>
-        <div className="status-group">
-          <span className="status-item">
-            <span className={`led ${serverOk ? 'ready' : ''}`} />
-            서버
-          </span>
-          <span className="status-item">
-            <span className={`led ${isLive ? 'on-air' : devices.length > 0 ? 'ready' : ''}`} />
-            단말 {devices.length}
-          </span>
-          <button className="icon-btn" onClick={b.logout}>로그아웃</button>
+
+        <div className="topbar-meta">
+          <div className="meta-lines">
+            <div className="meta-row">
+              <span className="meta-k">DOMAIN</span>
+              <span className="meta-v">{location.host}</span>
+            </div>
+            <div className="meta-row">
+              <span className="meta-k">SESSION</span>
+              <span className="meta-v">#{b.health?.session.session_id ?? '—'}</span>
+            </div>
+          </div>
+          <div className="status-group">
+            <span className="status-item">
+              <span className={`led ${serverOk ? 'ready' : ''}`} />
+              서버
+            </span>
+            <span className="status-item">
+              <span className={`led ${isLive ? 'on-air' : devices.length > 0 ? 'ready' : ''}`} />
+              단말 {devices.length}
+            </span>
+            <span className={`build-pill ${isLive ? 'on-air' : ''}`}>
+              {isLive ? 'ON AIR' : serverOk ? 'ONLINE' : 'OFFLINE'}
+            </span>
+            <button className="icon-btn" onClick={b.logout}>로그아웃</button>
+          </div>
         </div>
       </div>
 
-      <LivePanel
-        ingestState={b.ingestState}
-        ingestDetail={b.ingestDetail}
-        audioError={b.audioError}
-        onStart={b.startLive}
-        onStop={b.stopLive}
-      />
+      <div className="dashboard-grid">
+        <DevicePanel devices={devices} />
 
-      <FilePanel
-        files={b.files}
-        busy={b.busy}
-        onUpload={b.upload}
-        onBroadcast={b.broadcast}
-      />
+        <FilePanel
+          files={b.files}
+          busy={b.busy}
+          onUpload={b.upload}
+          onBroadcast={b.broadcast}
+        />
 
-      <DevicePanel devices={devices} />
+        <LivePanel
+          ingestState={b.ingestState}
+          ingestDetail={b.ingestDetail}
+          audioError={b.audioError}
+          onStart={b.startLive}
+          onStop={b.stopLive}
+        />
+      </div>
 
       <StatusPanel health={b.health} />
     </div>

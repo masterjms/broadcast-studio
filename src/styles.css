@@ -52,7 +52,9 @@ body {
   margin: 0;
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(79, 163, 255, 0.06), transparent);
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(79, 163, 255, 0.06), transparent),
+    radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: auto, 22px 22px;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 14px;
@@ -66,37 +68,94 @@ body {
   padding: 18px 16px 48px;
 }
 
+/* 로그인 후 메인 대시보드는 더 넓게 — 3열 그리드를 담는다 */
+.app.app-wide {
+  max-width: 1180px;
+}
+
+/* ── 콘솔 대시보드 그리드 ────────────────────────────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+/* 그리드 안에서는 panel의 바깥 여백을 제거(그리드 gap이 대신함) */
+.dashboard-grid > .panel { margin-bottom: 0; height: 100%; }
+
+@media (max-width: 980px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+}
+
 /* ── 상단 콘솔 레일 ──────────────────────────────────────── */
 .topbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 14px 18px;
-  background: linear-gradient(180deg, #1d212a 0%, #181b22 100%);
+  gap: 24px;
+  padding: 18px 22px;
+  background:
+    radial-gradient(ellipse 480px 160px at 100% 0%, rgba(79, 163, 255, 0.07), transparent),
+    linear-gradient(180deg, #1d212a 0%, #181b22 100%);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 .topbar .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .topbar .brand .brand-logo {
-  width: 22px; height: 22px; object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(79, 163, 255, 0.35));
+  width: 34px; height: 34px; object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(79, 163, 255, 0.35));
 }
+.topbar .brand-text { display: flex; flex-direction: column; gap: 2px; }
 .topbar h1 {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   letter-spacing: 0.01em;
   margin: 0;
 }
+.topbar .tagline {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.topbar-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.meta-lines { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; }
+.meta-row {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--font-mono); font-size: 11px;
+}
+.meta-row .meta-k { color: var(--text-faint); letter-spacing: 0.08em; }
+.meta-row .meta-v { color: var(--text-dim); }
+
+.build-pill {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em;
+  padding: 3px 9px; border-radius: 100px;
+  background: var(--panel-raised); color: var(--text-dim);
+  border: 1px solid var(--line);
+}
+.build-pill.on-air {
+  background: var(--on-air-dim); color: var(--on-air);
+  border-color: transparent;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
 .topbar .status-group {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   font-size: 12.5px;
   color: var(--text-dim);
 }
@@ -138,8 +197,16 @@ body {
   padding: 18px 18px 18px 20px;
   margin-bottom: 14px;
   overflow: hidden;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.panel:hover {
+  border-color: var(--line-soft);
+}
+.panel:hover::before {
+  width: 4px;
 }
 .panel::before {
+  transition: width 0.18s ease;
   content: '';
   position: absolute; left: 0; top: 0; bottom: 0;
   width: 3px;
@@ -184,11 +251,12 @@ body {
 .pill.warn { background: var(--warn-dim); color: var(--warn); border-color: transparent; }
 
 /* ── 폼 요소 ─────────────────────────────────────────────── */
-.field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .field-row label {
   font-size: 12.5px; color: var(--text-dim); min-width: 52px;
   font-family: var(--font-mono);
 }
+.field-row > .dropzone { min-width: 140px; }
 select, input[type="text"], input[type="password"] {
   flex: 1; height: 38px; padding: 0 12px;
   border: 1px solid var(--line); border-radius: var(--radius-sm);
