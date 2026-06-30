@@ -1,33 +1,53 @@
-import { HealthSnapshot } from '../net/apiClient';
+import { useState, FormEvent } from 'react';
 
 interface Props {
-  health: HealthSnapshot | null;
+  onLogin: (username: string, password: string) => Promise<void>;
 }
 
-export function StatusPanel({ health }: Props) {
-  const state = health?.session.state ?? '—';
-  const sent = health?.live_stats?.sent ?? 0;
-  const dropped =
-    (health?.live_stats?.dropped_old ?? 0) + (health?.live_stats?.dropped_backlog ?? 0);
+export function LoginScreen({ onLogin }: Props) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await onLogin(username, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <div className="metrics">
-      <div className="metric">
-        <div className="k">상태</div>
-        <div className="v">{state}</div>
-      </div>
-      <div className="metric">
-        <div className="k">송출 프레임</div>
-        <div className="v">{sent.toLocaleString()}</div>
-      </div>
-      <div className="metric">
-        <div className="k">드롭</div>
-        <div className="v">{dropped.toLocaleString()}</div>
-      </div>
-      <div className="metric">
-        <div className="k">단말</div>
-        <div className="v">{health?.audio_devices ?? 0}</div>
-      </div>
+    <div className="login-wrap">
+      <form className="panel login-card" onSubmit={submit}>
+        <div className="brand-mark" />
+        <h1>castboard</h1>
+        <p>방송을 시작하려면 로그인하세요.</p>
+        {error && <div className="banner error">{error}</div>}
+        <div className="field-row">
+          <label htmlFor="u">아이디</label>
+          <input
+            id="u" type="text" value={username} autoComplete="username"
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <div className="field-row">
+          <label htmlFor="p">비밀번호</label>
+          <input
+            id="p" type="password" value={password} autoComplete="current-password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <button type="submit" disabled={busy}>
+          {busy ? '로그인 중…' : '로그인'}
+        </button>
+      </form>
     </div>
   );
 }

@@ -79,6 +79,23 @@ export class OpusStreamCapture {
 
       await this.rec.start();
       this.running = true;
+
+      // 라이브 도중 마이크가 물리적으로 빠지거나 OS가 장치를 회수하면
+      // 트랙이 'ended'된다. 조용히 끊기지 않도록 감지해서 알린다.
+      const stream = this.rec.stream;
+      if (stream) {
+        for (const track of stream.getTracks()) {
+          track.addEventListener('ended', () => {
+            if (!this.running) return; // 이미 stop()으로 정리된 경우 무시
+            opts.onError?.({
+              kind: 'device_busy',
+              message: '마이크 연결이 끊겼습니다. 케이블/USB 연결을 확인한 뒤 다시 시작해 주세요.',
+              recoverable: true,
+            });
+            this.stop();
+          });
+        }
+      }
     } catch (e) {
       await this.stop();
       opts.onError?.(classifyAudioError(e));

@@ -2,6 +2,7 @@ import { useBroadcaster } from './state/useBroadcaster';
 import { LoginScreen } from './ui/LoginScreen';
 import { LivePanel } from './ui/LivePanel';
 import { FilePanel } from './ui/FilePanel';
+import { DevicePanel } from './ui/DevicePanel';
 import { StatusPanel } from './ui/StatusPanel';
 
 export default function App() {
@@ -16,21 +17,26 @@ export default function App() {
   }
 
   const serverOk = b.health?.ok ?? false;
-  const devices = b.health?.cmd_devices ?? 0;
+  const devices = b.health?.devices ?? [];
+  const isLive = b.ingestState === 'live';
 
   return (
     <div className="app">
       <div className="topbar">
-        <h1>군포 방송 스튜디오</h1>
+        <div className="brand">
+          <span className="mark" />
+          <h1>castboard</h1>
+        </div>
         <div className="status-group">
-          <span>
-            <span className={`dot ${serverOk ? 'ok' : 'off'}`} />
-            {serverOk ? '서버 연결됨' : '서버 끊김'}
+          <span className="status-item">
+            <span className={`led ${serverOk ? 'ready' : ''}`} />
+            서버
           </span>
-          <span>단말 {devices}대</span>
-          <button style={{ height: 30, padding: '0 12px' }} onClick={b.logout}>
-            로그아웃
-          </button>
+          <span className="status-item">
+            <span className={`led ${isLive ? 'on-air' : devices.length > 0 ? 'ready' : ''}`} />
+            단말 {devices.length}
+          </span>
+          <button className="icon-btn" onClick={b.logout}>로그아웃</button>
         </div>
       </div>
 
@@ -48,6 +54,8 @@ export default function App() {
         onUpload={b.upload}
         onBroadcast={b.broadcast}
       />
+
+      <DevicePanel devices={devices} />
 
       <StatusPanel health={b.health} />
     </div>

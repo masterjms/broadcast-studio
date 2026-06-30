@@ -6,7 +6,7 @@
  * CORS가 없다.
  */
 
-const TOKEN_KEY = 'gunpo.jwt';
+const TOKEN_KEY = 'castboard.jwt';
 
 export interface UploadResult {
   ok: boolean;
@@ -23,11 +23,19 @@ export interface FileEntry {
   https_url: string;
 }
 
+export interface DeviceInfo {
+  device_id: string;
+  connected: boolean;
+  audio_connected: boolean;
+  since: number | null; // epoch seconds
+}
+
 export interface HealthSnapshot {
   ok: boolean;
   session: { state: string; session_id: number; file_id: number };
   cmd_devices: number;
   audio_devices: number;
+  devices: DeviceInfo[];
   ingest_connected: boolean;
   live_stats: {
     sent: number;

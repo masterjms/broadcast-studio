@@ -12,13 +12,13 @@ interface Props {
 }
 
 const STATE_LABEL: Record<IngestState, string> = {
-  idle: '대기 중',
-  connecting: '연결 중…',
-  authenticating: '인증 중…',
-  live: '방송 중',
-  reconnecting: '재연결 중…',
+  idle: '대기',
+  connecting: '연결 중',
+  authenticating: '인증 중',
+  live: 'ON AIR',
+  reconnecting: '재연결 중',
   rejected: '거부됨',
-  closed: '종료됨',
+  closed: '종료',
 };
 
 export function LivePanel({ ingestState, ingestDetail, audioError, onStart, onStop }: Props) {
@@ -30,21 +30,24 @@ export function LivePanel({ ingestState, ingestDetail, audioError, onStart, onSt
     requestAndEnumerate();
   }, [requestAndEnumerate]);
 
-  const isLive = ingestState === 'live' ||
-    ingestState === 'connecting' ||
+  const isLive = ingestState === 'live';
+  const isPending = ingestState === 'connecting' ||
     ingestState === 'authenticating' ||
     ingestState === 'reconnecting';
+  const isActive = isLive || isPending;
 
   const deviceError = error ?? audioError;
 
   return (
-    <div className="card">
-      <h2>
-        라이브 방송
-        <span className={`tag ${isLive ? 'live' : ''}`}>
+    <div className={`panel rail-live`}>
+      <div className="panel-head">
+        <span className="eyebrow">LIVE</span>
+        <h2>라이브 방송</h2>
+        <div className="spacer" />
+        <span className={`pill ${isLive ? 'on-air' : isPending ? 'warn' : ''}`}>
           {STATE_LABEL[ingestState]}{ingestDetail ? ` · ${ingestDetail}` : ''}
         </span>
-      </h2>
+      </div>
 
       {permission === 'denied' && (
         <div className="banner error">
@@ -55,12 +58,12 @@ export function LivePanel({ ingestState, ingestDetail, audioError, onStart, onSt
         <div className="banner error">{deviceError.message}</div>
       )}
 
-      <div className="row">
+      <div className="field-row">
         <label htmlFor="mic">마이크</label>
         <select
           id="mic"
           value={selectedId ?? ''}
-          disabled={isLive || devices.length === 0}
+          disabled={isActive || devices.length === 0}
           onChange={(e) => selectDevice(e.target.value)}
         >
           {devices.length === 0 && <option value="">마이크를 찾는 중…</option>}
@@ -70,17 +73,22 @@ export function LivePanel({ ingestState, ingestDetail, audioError, onStart, onSt
         </select>
       </div>
 
-      {!isLive ? (
+      {!isActive ? (
         <button
-          className="btn-live"
+          className="onair-btn"
           disabled={!selectedId}
           onClick={() => selectedId && onStart(selectedId)}
         >
+          <span className="dot" />
           방송 시작
         </button>
       ) : (
-        <button className="btn-live on" onClick={onStop}>
-          방송 중지
+        <button
+          className={`onair-btn ${isLive ? 'live' : 'pending'}`}
+          onClick={onStop}
+        >
+          <span className="dot" />
+          {isLive ? 'ON AIR · 누르면 중지' : '연결 중… 누르면 취소'}
         </button>
       )}
     </div>

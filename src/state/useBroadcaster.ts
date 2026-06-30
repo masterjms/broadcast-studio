@@ -22,31 +22,6 @@ import {
   FileEntry, HealthSnapshot,
 } from '../net/apiClient';
 
-const DEV_AUTH_BYPASS = import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS_LOGIN === 'true';
-
-const DEV_HEALTH: HealthSnapshot = {
-  ok: true,
-  session: { state: 'DEV_PREVIEW', session_id: 0, file_id: 0 },
-  cmd_devices: 3,
-  audio_devices: 3,
-  ingest_connected: false,
-  live_stats: {
-    sent: 0,
-    dropped_old: 0,
-    dropped_backlog: 0,
-    bursts: 0,
-  },
-};
-
-const DEV_FILES: FileEntry[] = [
-  {
-    file_name: 'sample-announcement.mp3',
-    size: 1_842_176,
-    sha256: 'dev-preview',
-    https_url: '#',
-  },
-];
-
 export interface BroadcasterState {
   loggedIn: boolean;
   ingestState: IngestState;
@@ -66,7 +41,7 @@ export interface BroadcasterState {
 }
 
 export function useBroadcaster(): BroadcasterState {
-  const [loggedIn, setLoggedIn] = useState(() => DEV_AUTH_BYPASS || isLoggedIn());
+  const [loggedIn, setLoggedIn] = useState(isLoggedIn());
   const [ingestState, setIngestState] = useState<IngestState>('idle');
   const [ingestDetail, setIngestDetail] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<ClassifiedAudioError | null>(null);
@@ -80,10 +55,6 @@ export function useBroadcaster(): BroadcasterState {
   // health 폴링 (로그인 상태에서만)
   useEffect(() => {
     if (!loggedIn) return;
-    if (DEV_AUTH_BYPASS) {
-      setHealth(DEV_HEALTH);
-      return;
-    }
     let alive = true;
     const tick = async () => {
       try {
@@ -100,10 +71,6 @@ export function useBroadcaster(): BroadcasterState {
   }, [loggedIn]);
 
   const login = useCallback(async (u: string, p: string) => {
-    if (DEV_AUTH_BYPASS) {
-      setLoggedIn(true);
-      return;
-    }
     await apiLogin(u, p);
     setLoggedIn(true);
   }, []);
@@ -117,6 +84,7 @@ export function useBroadcaster(): BroadcasterState {
   }, []);
 
   const startLive = useCallback(async (deviceId: string) => {
+    if (captureRef.current?.isRunning || ingestRef.current) return; // 중복 시작 방지
     setAudioError(null);
 
     const ingest = new IngestClient({
@@ -135,9 +103,12 @@ export function useBroadcaster(): BroadcasterState {
       onFrame: (packet) => ingest.sendFrame(packet),
       onError: (e) => {
         setAudioError(e);
-        // 캡처 실패 시 송출도 정리
+        // 캡처 실패/중단 시 송출도 함께 정리하고 참조를 비워
+        // 다시 '방송 시작'을 누를 수 있게 한다.
         capture.stop();
         ingest.close();
+        if (captureRef.current === capture) captureRef.current = null;
+        if (ingestRef.current === ingest) ingestRef.current = null;
       },
     });
   }, []);
@@ -150,28 +121,12 @@ export function useBroadcaster(): BroadcasterState {
   }, []);
 
   const refreshFiles = useCallback(async () => {
-    if (DEV_AUTH_BYPASS) {
-      setFiles(DEV_FILES);
-      return;
-    }
     setFiles(await getFiles());
   }, []);
 
   const upload = useCallback(async (file: File) => {
     setBusy(true);
     try {
-      if (DEV_AUTH_BYPASS) {
-        setFiles((current) => [
-          {
-            file_name: file.name,
-            size: file.size,
-            sha256: 'dev-preview',
-            https_url: '#',
-          },
-          ...current,
-        ]);
-        return;
-      }
       await uploadFile(file);
       setFiles(await getFiles());
     } finally {
@@ -182,13 +137,6 @@ export function useBroadcaster(): BroadcasterState {
   const broadcast = useCallback(async (fileName: string) => {
     setBusy(true);
     try {
-      if (DEV_AUTH_BYPASS) {
-        setHealth((current) => ({
-          ...(current ?? DEV_HEALTH),
-          session: { state: `FILE: ${fileName}`, session_id: 0, file_id: 1 },
-        }));
-        return;
-      }
       await broadcastFile(fileName);
     } finally {
       setBusy(false);

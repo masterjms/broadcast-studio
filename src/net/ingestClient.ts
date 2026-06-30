@@ -58,7 +58,9 @@ export class IngestClient {
   }
 
   open(): void {
+    if (this.wantOpen && this.ws) return; // 이미 연결 시도 중이면 무시(중복 방지)
     this.wantOpen = true;
+    this.retry = 0;
     this.connect();
   }
 
@@ -67,6 +69,11 @@ export class IngestClient {
     if (!token) {
       this.setState('rejected', '로그인이 필요합니다.');
       return;
+    }
+    // 직전 재연결 타이머가 남아있다면(이론상 발생 안 해야 하지만) 정리한다.
+    if (this.retryTimer !== null) {
+      window.clearTimeout(this.retryTimer);
+      this.retryTimer = null;
     }
 
     this.setState(this.retry > 0 ? 'reconnecting' : 'connecting');
@@ -102,6 +109,10 @@ export class IngestClient {
     };
 
     ws.onclose = (ev) => {
+      // 이 클로저가 가리키던 ws가 이미 교체됐다면(빠른 stop→start),
+      // 낡은 close 이벤트가 현재 연결의 상태를 덮어쓰지 않도록 무시한다.
+      if (this.ws !== ws) return;
+
       this.ws = null;
       const reason = REJECT_REASONS[ev.code];
       if (reason) {
