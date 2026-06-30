@@ -143,7 +143,7 @@ export class IngestClient {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     // 백프레셔: 송신 버퍼가 과도하면 이번 프레임은 버린다(실시간 우선).
     if (ws.bufferedAmount > 1_000_000) return;
-    ws.send(packet);
+    ws.send(new Uint8Array(packet));
   }
 
   close(): void {
