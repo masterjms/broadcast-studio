@@ -24,8 +24,8 @@ export default function App() {
     <div className="app">
       <div className="topbar">
         <div className="brand">
-          <span className="mark" />
-          <h1>castboard</h1>
+          <img src="/brand/logo.png" alt="" className="brand-logo" />
+          <h1>마을 방송국</h1>
         </div>
         <div className="status-group">
           <span className="status-item">

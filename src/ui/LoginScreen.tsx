@@ -25,25 +25,26 @@ export function LoginScreen({ onLogin }: Props) {
 
   return (
     <div className="login-wrap">
-      <form className="card login-card" onSubmit={submit}>
-        <h1>군포 방송 스튜디오</h1>
+      <form className="panel login-card" onSubmit={submit}>
+        <img src="/brand/logo.png" alt="" className="brand-logo-lg" />
+        <h1>마을 방송국</h1>
         <p>방송을 시작하려면 로그인하세요.</p>
         {error && <div className="banner error">{error}</div>}
-        <div className="row">
+        <div className="field-row">
           <label htmlFor="u">아이디</label>
           <input
             id="u" type="text" value={username} autoComplete="username"
             onChange={(e) => setUsername(e.target.value)}
           />
         </div>
-        <div className="row">
+        <div className="field-row">
           <label htmlFor="p">비밀번호</label>
           <input
             id="p" type="password" value={password} autoComplete="current-password"
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        <button className="btn-primary" type="submit" disabled={busy}>
+        <button type="submit" disabled={busy}>
           {busy ? '로그인 중…' : '로그인'}
         </button>
       </form>
