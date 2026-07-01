@@ -3,7 +3,6 @@ import { LoginScreen } from './ui/LoginScreen';
 import { LivePanel } from './ui/LivePanel';
 import { FilePanel } from './ui/FilePanel';
 import { DevicePanel } from './ui/DevicePanel';
-import { StatusPanel } from './ui/StatusPanel';
 
 export default function App() {
   const b = useBroadcaster();
@@ -18,6 +17,7 @@ export default function App() {
 
   const serverOk = b.health?.ok ?? false;
   const devices = b.health?.devices ?? [];
+  const connectedCount = devices.filter((d) => d.connected).length;
   const isLive = b.ingestState === 'live';
 
   return (
@@ -48,8 +48,8 @@ export default function App() {
               서버
             </span>
             <span className="status-item">
-              <span className={`led ${isLive ? 'on-air' : devices.length > 0 ? 'ready' : ''}`} />
-              단말 {devices.length}
+              <span className={`led ${isLive ? 'on-air' : connectedCount > 0 ? 'ready' : ''}`} />
+              단말 {connectedCount}
             </span>
             <span className={`build-pill ${isLive ? 'on-air' : ''}`}>
               {isLive ? 'ON AIR' : serverOk ? 'ONLINE' : 'OFFLINE'}
@@ -60,25 +60,34 @@ export default function App() {
       </div>
 
       <div className="dashboard-grid">
-        <DevicePanel devices={devices} />
+        <DevicePanel
+          devices={devices}
+          selectedDevices={b.selectedDevices}
+          onToggle={b.toggleDevice}
+          onSelectAll={b.selectAllDevices}
+          onClear={b.clearDevices}
+        />
 
         <FilePanel
           files={b.files}
           busy={b.busy}
+          selectedCount={b.selectedDevices.length}
           onUpload={b.upload}
           onBroadcast={b.broadcast}
+          onDelete={b.removeFile}
         />
 
         <LivePanel
           ingestState={b.ingestState}
           ingestDetail={b.ingestDetail}
           audioError={b.audioError}
+          recordFlash={b.recordFlash}
+          onRecordFlashChange={b.setRecordFlash}
+          selectedCount={b.selectedDevices.length}
           onStart={b.startLive}
           onStop={b.stopLive}
         />
       </div>
-
-      <StatusPanel health={b.health} />
     </div>
   );
 }

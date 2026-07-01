@@ -4,8 +4,10 @@ import { FileEntry } from '../net/apiClient';
 interface Props {
   files: FileEntry[];
   busy: boolean;
+  selectedCount: number;
   onUpload: (file: File) => Promise<void>;
   onBroadcast: (fileName: string) => Promise<void>;
+  onDelete: (fileName: string) => Promise<void>;
 }
 
 function formatSize(bytes: number): string {
@@ -14,7 +16,9 @@ function formatSize(bytes: number): string {
     : `${Math.round(bytes / 1024)} KB`;
 }
 
-export function FilePanel({ files, busy, onUpload, onBroadcast }: Props) {
+export function FilePanel({
+  files, busy, selectedCount, onUpload, onBroadcast, onDelete,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +45,15 @@ export function FilePanel({ files, busy, onUpload, onBroadcast }: Props) {
       setError(e instanceof Error ? e.message : '전송에 실패했습니다.');
     } finally {
       setSendingFile(null);
+    }
+  };
+
+  const doDelete = async (name: string) => {
+    setError(null);
+    try {
+      await onDelete(name);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '삭제에 실패했습니다.');
     }
   };
 
@@ -72,14 +85,26 @@ export function FilePanel({ files, busy, onUpload, onBroadcast }: Props) {
         <div className="filelist">
           {files.map((f) => (
             <div className="fileitem" key={f.file_name}>
-              <span className="name">{f.file_name}</span>
+              <span className="name" title={f.file_name}>{f.original_name}</span>
               <span className="meta">
                 {formatSize(f.size)}
                 <button
+                  className="btn-send"
                   disabled={busy}
                   onClick={() => doBroadcast(f.file_name)}
+                  title={selectedCount > 0
+                    ? `선택한 ${selectedCount}대에 전송`
+                    : '연결된 전체 단말에 전송'}
                 >
                   {sendingFile === f.file_name ? '전송 중…' : '전송'}
+                </button>
+                <button
+                  className="btn-del"
+                  disabled={busy}
+                  onClick={() => doDelete(f.file_name)}
+                  title="삭제"
+                >
+                  ✕
                 </button>
               </span>
             </div>

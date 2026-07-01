@@ -18,6 +18,7 @@ export interface UploadResult {
 
 export interface FileEntry {
   file_name: string;
+  original_name: string;
   size: number;
   sha256: string;
   https_url: string;
@@ -104,15 +105,27 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   return data;
 }
 
-export async function broadcastFile(fileName: string): Promise<void> {
+export async function broadcastFile(fileName: string, devices?: string[]): Promise<void> {
+  const body: Record<string, unknown> = { file_name: fileName };
+  if (devices && devices.length > 0) body.devices = devices;
   const res = await authedFetch('/broadcast', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_name: fileName }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok || !data.ok) {
     throw new ApiError(res.status, data.error || '전송에 실패했습니다.');
+  }
+}
+
+export async function deleteFile(fileName: string): Promise<void> {
+  const res = await authedFetch(`/api/files/${encodeURIComponent(fileName)}`, {
+    method: 'DELETE',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new ApiError(res.status, data.error || '삭제에 실패했습니다.');
   }
 }
 

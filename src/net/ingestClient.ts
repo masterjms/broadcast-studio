@@ -26,6 +26,11 @@ export interface IngestCallbacks {
   onStateChange?: (state: IngestState, detail?: string) => void;
 }
 
+export interface LiveOptions {
+  recordFlash: boolean;
+  devices?: string[]; // 비우면 전체 단말
+}
+
 const REJECT_REASONS: Record<number, string> = {
   4001: '인증에 실패했습니다. 다시 로그인해 주세요.',
   4003: '연결된 단말이 없습니다. 단말 상태를 확인해 주세요.',
@@ -41,7 +46,7 @@ export class IngestClient {
   private retry = 0;
   private retryTimer: number | null = null;
 
-  constructor(private cb: IngestCallbacks = {}) {}
+  constructor(private cb: IngestCallbacks = {}, private opts: LiveOptions = { recordFlash: true }) {}
 
   getState(): IngestState {
     return this.state;
@@ -83,7 +88,13 @@ export class IngestClient {
 
     ws.onopen = () => {
       this.setState('authenticating');
-      ws.send(JSON.stringify({ type: 'auth', token }));
+      ws.send(JSON.stringify({
+        type: 'auth',
+        token,
+        record_flash: this.opts.recordFlash,
+        devices: this.opts.devices && this.opts.devices.length > 0
+          ? this.opts.devices : undefined,
+      }));
       // 서버는 인증 성공 시 별도 ack 없이 방송을 시작한다.
       // 짧은 지연 후 live로 간주(거부 시 onclose가 먼저 온다).
       window.setTimeout(() => {
@@ -143,7 +154,7 @@ export class IngestClient {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     // 백프레셔: 송신 버퍼가 과도하면 이번 프레임은 버린다(실시간 우선).
     if (ws.bufferedAmount > 1_000_000) return;
-    ws.send(new Uint8Array(packet));
+    ws.send(packet);
   }
 
   close(): void {
