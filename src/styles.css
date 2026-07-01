@@ -68,24 +68,51 @@ body {
   padding: 18px 16px 48px;
 }
 
-/* 로그인 후 메인 대시보드는 더 넓게 — 3열 그리드를 담는다 */
+/* 로그인 후 메인 대시보드는 화면 폭에 맞춰 넓게 — 3열 그리드를 담는다.
+   작은 화면에서는 여백을 최소로, 큰 모니터에서는 넉넉히 확장한다. */
 .app.app-wide {
-  max-width: 1180px;
+  max-width: 96vw;      /* 화면의 96%까지 사용 */
+  width: 1600px;        /* 기본 목표 폭 */
+}
+
+/* 초대형 모니터에서 과하게 늘어지지 않도록 상한 */
+@media (min-width: 1750px) {
+  .app.app-wide { width: 1680px; max-width: 1680px; }
 }
 
 /* ── 콘솔 대시보드 그리드 ────────────────────────────────── */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 18px;
   align-items: start;
   margin-bottom: 14px;
 }
 /* 그리드 안에서는 panel의 바깥 여백을 제거(그리드 gap이 대신함) */
 .dashboard-grid > .panel { margin-bottom: 0; height: 100%; }
 
-@media (max-width: 980px) {
+/* 중간 폭(태블릿/작은 노트북): 2열 */
+@media (max-width: 1100px) {
+  .app.app-wide { width: auto; max-width: 96vw; }
+  .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 좁은 화면: 1열 */
+@media (max-width: 720px) {
   .dashboard-grid { grid-template-columns: 1fr; }
+}
+
+/* 큰 화면에서는 패널 내부에 여유를 준다 */
+@media (min-width: 1101px) {
+  .app.app-wide .panel { padding: 22px 22px 22px 24px; }
+  .app.app-wide .panel-head h2 { font-size: 16px; }
+  .app.app-wide .channel-strip { padding: 13px 14px; }
+  .app.app-wide .channel-strip .mac { font-size: 14px; }
+  .app.app-wide .fileitem { padding: 11px 2px; }
+  .app.app-wide select,
+  .app.app-wide input[type="text"],
+  .app.app-wide input[type="password"] { height: 40px; }
+  .app.app-wide .onair-btn { height: 60px; font-size: 16px; }
 }
 
 /* ── 상단 콘솔 레일 ──────────────────────────────────────── */
