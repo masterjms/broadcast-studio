@@ -12,6 +12,7 @@ import { IngestClient, IngestState } from '../net/ingestClient';
 import {
   isLoggedIn, login as apiLogin, clearToken,
   uploadFile, broadcastFile, deleteFile, getFiles, getHealth,
+  restartServerApi,
   FileEntry, HealthSnapshot,
 } from '../net/apiClient';
 
@@ -34,6 +35,20 @@ export interface BroadcasterState {
   recordFlash: boolean;
   setRecordFlash: (v: boolean) => void;
 
+  // 파일 방송 녹음 옵션(단말에 재방송 저장)
+  fileRecordFlash: boolean;
+  setFileRecordFlash: (v: boolean) => void;
+
+  // 마이크 볼륨(0.0~2.0, 1.0=기본)
+  micGain: number;
+  setMicGain: (v: number) => void;
+
+  // 파일 방송 결과 알림(busy 등). 표시 후 clearNotice로 지움.
+  notice: string | null;
+  clearNotice: () => void;
+
+  restartServer: () => Promise<void>;
+
   login: (u: string, p: string) => Promise<void>;
   logout: () => void;
   startLive: (deviceId: string) => Promise<void>;
@@ -54,6 +69,9 @@ export function useBroadcaster(): BroadcasterState {
   const [busy, setBusy] = useState(false);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [recordFlash, setRecordFlash] = useState(true);
+  const [fileRecordFlash, setFileRecordFlash] = useState(true);
+  const [micGain, setMicGainState] = useState(1.0);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const captureRef = useRef<OpusStreamCapture | null>(null);
   const ingestRef = useRef<IngestClient | null>(null);
@@ -130,6 +148,7 @@ export function useBroadcaster(): BroadcasterState {
     captureRef.current = capture;
     await capture.start({
       deviceId,
+      gain: micGain,
       onFrame: (packet) => ingest.sendFrame(packet),
       onError: (e) => {
         setAudioError(e);
@@ -139,7 +158,13 @@ export function useBroadcaster(): BroadcasterState {
         if (ingestRef.current === ingest) ingestRef.current = null;
       },
     });
-  }, [recordFlash, selectedDevices]);
+  }, [recordFlash, selectedDevices, micGain]);
+
+  // 마이크 볼륨: 상태 갱신 + 방송 중이면 실시간 반영
+  const setMicGain = useCallback((v: number) => {
+    setMicGainState(v);
+    captureRef.current?.setGain(v);
+  }, []);
 
   const stopLive = useCallback(async () => {
     await captureRef.current?.stop();
@@ -164,12 +189,27 @@ export function useBroadcaster(): BroadcasterState {
 
   const broadcast = useCallback(async (fileName: string) => {
     setBusy(true);
+    setNotice(null);
     try {
-      await broadcastFile(fileName, selectedDevices);
+      await broadcastFile(fileName, selectedDevices, fileRecordFlash);
+    } catch (e) {
+      // 서버가 busy(409)면 사용자에게 안내만 하고 재시도는 사용자가 직접
+      const anyErr = e as { status?: number; message?: string };
+      if (anyErr.status === 409) {
+        setNotice(anyErr.message || '단말이 방송 처리 중입니다. 잠시 후 다시 시도하세요.');
+      } else {
+        throw e;
+      }
     } finally {
       setBusy(false);
     }
-  }, [selectedDevices]);
+  }, [selectedDevices, fileRecordFlash]);
+
+  const clearNotice = useCallback(() => setNotice(null), []);
+
+  const restartServer = useCallback(async () => {
+    await restartServerApi();
+  }, []);
 
   const removeFile = useCallback(async (fileName: string) => {
     await deleteFile(fileName);
@@ -184,6 +224,9 @@ export function useBroadcaster(): BroadcasterState {
     loggedIn, ingestState, ingestDetail, audioError, health, files, busy,
     selectedDevices, toggleDevice, selectAllDevices, clearDevices,
     recordFlash, setRecordFlash,
+    fileRecordFlash, setFileRecordFlash,
+    micGain, setMicGain,
+    notice, clearNotice, restartServer,
     login, logout, startLive, stopLive, upload, broadcast, removeFile, refreshFiles,
   };
 }

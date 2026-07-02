@@ -26,6 +26,7 @@ export interface OpusCaptureOptions {
   onFrame: (opusPacket: Uint8Array) => void;
   onError?: (e: ClassifiedAudioError) => void;
   onLevel?: (rms: number) => void;   // 입력 레벨(0~1), UI 미터용
+  gain?: number;                     // 초기 마이크 볼륨(기본 1.0)
 }
 
 export class OpusStreamCapture {
@@ -35,6 +36,17 @@ export class OpusStreamCapture {
 
   get isRunning(): boolean {
     return this.running;
+  }
+
+  /** 방송 중 마이크 볼륨을 실시간으로 조절(1.0=기본). */
+  setGain(gain: number): void {
+    if (this.rec) {
+      try {
+        this.rec.setRecordingGain(gain);
+      } catch {
+        /* 아직 시작 전이면 무시 */
+      }
+    }
   }
 
   async start(opts: OpusCaptureOptions): Promise<void> {
@@ -67,6 +79,7 @@ export class OpusStreamCapture {
         numberOfChannels: 1,
         streamPages: true,          // Ogg 페이지를 즉시 스트리밍(저지연)
         maxFramesPerPage: 1,        // 페이지당 1프레임 → 지연 최소화
+        recordingGain: opts.gain ?? 1.0,  // 마이크 볼륨
       });
 
       // Ogg 페이지 → raw packet 추출 → 콜백

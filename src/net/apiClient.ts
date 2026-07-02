@@ -105,8 +105,13 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   return data;
 }
 
-export async function broadcastFile(fileName: string, devices?: string[]): Promise<void> {
-  const body: Record<string, unknown> = { file_name: fileName };
+export async function broadcastFile(
+  fileName: string, devices?: string[], storeFlash: boolean = true,
+): Promise<void> {
+  const body: Record<string, unknown> = {
+    file_name: fileName,
+    store_flash: storeFlash,
+  };
   if (devices && devices.length > 0) body.devices = devices;
   const res = await authedFetch('/broadcast', {
     method: 'POST',
@@ -126,6 +131,14 @@ export async function deleteFile(fileName: string): Promise<void> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) {
     throw new ApiError(res.status, data.error || '삭제에 실패했습니다.');
+  }
+}
+
+export async function restartServerApi(): Promise<void> {
+  const res = await authedFetch('/api/server/restart', { method: 'POST' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new ApiError(res.status, data.error || '재시작 요청에 실패했습니다.');
   }
 }
 

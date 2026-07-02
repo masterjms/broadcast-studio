@@ -9,6 +9,8 @@ interface Props {
   audioError: ClassifiedAudioError | null;
   recordFlash: boolean;
   onRecordFlashChange: (v: boolean) => void;
+  micGain: number;
+  onMicGainChange: (v: number) => void;
   selectedCount: number;
   onStart: (deviceId: string) => void;
   onStop: () => void;
@@ -26,6 +28,7 @@ const STATE_LABEL: Record<IngestState, string> = {
 
 export function LivePanel({
   ingestState, ingestDetail, audioError, recordFlash, onRecordFlashChange,
+  micGain, onMicGainChange,
   selectedCount, onStart, onStop,
 }: Props) {
   const { devices, selectedId, permission, error, requestAndEnumerate, selectDevice } =
@@ -77,6 +80,20 @@ export function LivePanel({
             <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
           ))}
         </select>
+      </div>
+
+      <div className="field-row volume-row">
+        <label htmlFor="vol">볼륨</label>
+        <input
+          id="vol"
+          type="range"
+          min={0}
+          max={2}
+          step={0.05}
+          value={micGain}
+          onChange={(e) => onMicGainChange(parseFloat(e.target.value))}
+        />
+        <span className="volume-value">{Math.round(micGain * 100)}%</span>
       </div>
 
       <label className="checkbox-row">

@@ -5,6 +5,10 @@ interface Props {
   files: FileEntry[];
   busy: boolean;
   selectedCount: number;
+  recordFlash: boolean;
+  onRecordFlashChange: (v: boolean) => void;
+  notice: string | null;
+  onClearNotice: () => void;
   onUpload: (file: File) => Promise<void>;
   onBroadcast: (fileName: string) => Promise<void>;
   onDelete: (fileName: string) => Promise<void>;
@@ -17,7 +21,8 @@ function formatSize(bytes: number): string {
 }
 
 export function FilePanel({
-  files, busy, selectedCount, onUpload, onBroadcast, onDelete,
+  files, busy, selectedCount, recordFlash, onRecordFlashChange,
+  notice, onClearNotice, onUpload, onBroadcast, onDelete,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<File | null>(null);
@@ -67,6 +72,11 @@ export function FilePanel({
       </div>
 
       {error && <div className="banner error">{error}</div>}
+      {notice && (
+        <div className="banner warn" onClick={onClearNotice} style={{ cursor: 'pointer' }}>
+          {notice} <span style={{ opacity: 0.6 }}>(눌러서 닫기)</span>
+        </div>
+      )}
 
       <div className="field-row">
         <div className="dropzone" onClick={() => inputRef.current?.click()}>
@@ -80,6 +90,15 @@ export function FilePanel({
           {busy && !sendingFile ? '업로드 중…' : '업로드'}
         </button>
       </div>
+
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={recordFlash}
+          onChange={(e) => onRecordFlashChange(e.target.checked)}
+        />
+        <span>단말에 녹음(재방송 저장)</span>
+      </label>
 
       {files.length > 0 ? (
         <div className="filelist">

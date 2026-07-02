@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useBroadcaster } from './state/useBroadcaster';
 import { LoginScreen } from './ui/LoginScreen';
 import { LivePanel } from './ui/LivePanel';
@@ -6,6 +7,7 @@ import { DevicePanel } from './ui/DevicePanel';
 
 export default function App() {
   const b = useBroadcaster();
+  const [restarting, setRestarting] = useState(false);
 
   if (!b.loggedIn) {
     return (
@@ -20,11 +22,29 @@ export default function App() {
   const connectedCount = devices.filter((d) => d.connected).length;
   const isLive = b.ingestState === 'live';
 
+  const onRestart = async () => {
+    const ok = window.confirm(
+      '서버를 재시작하시겠습니까?\n방송 중이라면 잠시 끊깁니다. 몇 초 후 자동으로 복구됩니다.',
+    );
+    if (!ok) return;
+    setRestarting(true);
+    try {
+      await b.restartServer();
+      // 재시작 동안 잠깐 대기 후 자동 복구를 기다린다
+      setTimeout(() => setRestarting(false), 8000);
+    } catch {
+      setRestarting(false);
+      window.alert('재시작 요청에 실패했습니다.');
+    }
+  };
+
   return (
     <div className="app app-wide">
       <div className="topbar">
         <div className="brand">
-          <img src="/brand/logo.png" alt="" className="brand-logo" />
+          <span className="brand-logo-box">
+            <img src="/brand/logo.png" alt="한나전자" className="brand-logo" />
+          </span>
           <div className="brand-text">
             <h1>castboard</h1>
             <p className="tagline">방송 콘솔 · 실시간 IoT 라디오 송출</p>
@@ -54,6 +74,14 @@ export default function App() {
             <span className={`build-pill ${isLive ? 'on-air' : ''}`}>
               {isLive ? 'ON AIR' : serverOk ? 'ONLINE' : 'OFFLINE'}
             </span>
+            <button
+              className="icon-btn danger"
+              onClick={onRestart}
+              disabled={restarting}
+              title="서버 프로세스를 재시작합니다"
+            >
+              {restarting ? '재시작 중…' : '서버 재시작'}
+            </button>
             <button className="icon-btn" onClick={b.logout}>로그아웃</button>
           </div>
         </div>
@@ -72,6 +100,10 @@ export default function App() {
           files={b.files}
           busy={b.busy}
           selectedCount={b.selectedDevices.length}
+          recordFlash={b.fileRecordFlash}
+          onRecordFlashChange={b.setFileRecordFlash}
+          notice={b.notice}
+          onClearNotice={b.clearNotice}
           onUpload={b.upload}
           onBroadcast={b.broadcast}
           onDelete={b.removeFile}
@@ -83,6 +115,8 @@ export default function App() {
           audioError={b.audioError}
           recordFlash={b.recordFlash}
           onRecordFlashChange={b.setRecordFlash}
+          micGain={b.micGain}
+          onMicGainChange={b.setMicGain}
           selectedCount={b.selectedDevices.length}
           onStart={b.startLive}
           onStop={b.stopLive}

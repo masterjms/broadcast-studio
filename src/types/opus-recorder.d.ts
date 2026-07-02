@@ -15,6 +15,8 @@ declare module 'opus-recorder' {
     encoderComplexity?: number;
     resampleQuality?: number;
     originalSampleRateOverride?: number;
+    /** 녹음 입력 게인. 0~1 범위이며 기본값은 1. */
+    recordingGain?: number;
   }
 
   export default class Recorder {
@@ -31,6 +33,8 @@ declare module 'opus-recorder' {
     stop(): Promise<void>;
     pause(): Promise<void>;
     resume(): void;
+    /** 녹음 중 입력 게인을 조절한다. 값의 범위는 0~1. */
+    setRecordingGain(gain: number): void;
     readonly state: string;
   }
 }
